@@ -1,4 +1,4 @@
-
+*Forked by sragss to add Curve25519. Curve implemented in [ark3-curve25519](https://github.com/sragss/ark3-curve25519), then plumbed through the CLI here. Will not work for proving functionality, but should be able to generate 25519 field R1CS constraints from Zokrates programs.*
 <img src="zokrates_logo.svg" width="100%" height="180">
 
 # ZoKrates

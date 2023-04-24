@@ -9,6 +9,7 @@ pub enum CurveParameter {
     Bw6_761,
     Pallas,
     Vesta,
+    Curve25519,
 }
 
 impl std::fmt::Display for CurveParameter {
@@ -22,6 +23,7 @@ impl std::fmt::Display for CurveParameter {
             Bw6_761 => write!(f, "bw6_761"),
             Pallas => write!(f, "pallas"),
             Vesta => write!(f, "vesta"),
+            Curve25519 => write!(f, "curve25519"),
         }
     }
 }
@@ -84,6 +86,7 @@ impl TryFrom<&str> for CurveParameter {
             BW6_761 => Ok(CurveParameter::Bw6_761),
             PALLAS => Ok(CurveParameter::Pallas),
             VESTA => Ok(CurveParameter::Vesta),
+            CURVE25519 => Ok(CurveParameter::Curve25519),
             _ => Err(format!("Unknown curve {}", s)),
         }
     }

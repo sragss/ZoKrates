@@ -39,6 +39,7 @@ ark-bls12-381 = { version = "^0.3.0", features = ["curve"] }
 ark-bw6-761 = { version = "^0.3.0", default-features = false }
 ark-pallas = { version = "^0.3.0", features = ["curve"] }
 ark-vesta = { version = "^0.3.0" }
+ark-curve25519 = { git = "https://github.com/sragss/ark3-curve25519", package = "ark3-curve25519" }
 ark-serialize = { version = "^0.3.0", default-features = false, features = ["std"] }
 
 [dev-dependencies]

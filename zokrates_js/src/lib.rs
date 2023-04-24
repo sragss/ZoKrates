@@ -25,7 +25,7 @@ use zokrates_common::{CompileConfig, Resolver};
 use zokrates_core::compile::{compile as core_compile, CompilationArtifacts, CompileError};
 use zokrates_core::imports::Error;
 use zokrates_field::{
-    Bls12_377Field, Bls12_381Field, Bn128Field, Bw6_761Field, Field, PallasField, VestaField,
+    Bls12_377Field, Bls12_381Field, Bn128Field, Bw6_761Field, Field, PallasField, VestaField, Curve25519Field
 };
 use zokrates_proof_systems::groth16::G16;
 use zokrates_proof_systems::rng::get_rng_from_entropy;
@@ -522,6 +522,9 @@ pub fn compile(
         }
         CurveParameter::Vesta => {
             internal::compile::<VestaField>(source, location, resolve_callback, config)
+        },
+        CurveParameter::Curve25519=> {
+            internal::compile::<Curve25519Field>(source, location, resolve_callback, config)
         }
     }
 }
@@ -545,6 +548,7 @@ pub fn compute_witness(
         ProgEnum::Bw6_761Program(p) => internal::compute::<_>(p, abi, args, config, log_callback),
         ProgEnum::PallasProgram(p) => internal::compute::<_>(p, abi, args, config, log_callback),
         ProgEnum::VestaProgram(p) => internal::compute::<_>(p, abi, args, config, log_callback),
+        ProgEnum::Curve25519Program(p) => internal::compute::<_>(p, abi, args, config, log_callback),
     }
 }
 

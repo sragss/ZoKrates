@@ -396,6 +396,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "ark3-curve25519"
+version = "0.1.0"
+source = "git+https://github.com/sragss/ark3-curve25519#758aabf107b817a646118e60d1fd1a146e315881"
+dependencies = [
+ "ark-ff",
+]
+
+[[package]]
 name = "arrayref"
 version = "0.3.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3819,6 +3827,7 @@ dependencies = [
  "ark-pallas",
  "ark-serialize",
  "ark-vesta",
+ "ark3-curve25519",
  "bellman_ce",
  "bellperson",
  "bincode 0.8.0",

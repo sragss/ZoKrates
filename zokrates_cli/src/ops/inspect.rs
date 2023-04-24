@@ -42,6 +42,7 @@ pub fn exec(sub_matches: &ArgMatches) -> Result<(), String> {
         ProgEnum::Bw6_761Program(p) => cli_inspect(p, sub_matches),
         ProgEnum::PallasProgram(p) => cli_inspect(p, sub_matches),
         ProgEnum::VestaProgram(p) => cli_inspect(p, sub_matches),
+        ProgEnum::Curve25519Program(p) => cli_inspect(p, sub_matches),
     }
 }
 
