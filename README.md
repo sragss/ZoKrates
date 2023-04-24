@@ -4,6 +4,7 @@ Forked by sragss to add Curve25519. Curve implemented in [ark3-curve25519](https
 To run:
 - `./build.sh`
 - `./target/debug/zokrates compile -i example.zok --curve curve25519 -o example_output`
+- `./target/debug/zokrates compile -i example.zok --curve curve25519 -r example.r1cs`
 
 <img src="zokrates_logo.svg" width="100%" height="180">
 
