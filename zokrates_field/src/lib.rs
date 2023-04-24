@@ -35,10 +35,10 @@ pub trait BellmanFieldExtensions {
 
 pub trait ArkFieldExtensions {
     /// An associated type to be able to operate with ark ff traits
-    type ArkEngine: ark_ec::PairingEngine;
+    type ArkEngine: ark_ec::pairing::Pairing;
 
-    fn from_ark(e: <Self::ArkEngine as ark_ec::PairingEngine>::Fr) -> Self;
-    fn into_ark(self) -> <Self::ArkEngine as ark_ec::PairingEngine>::Fr;
+    fn from_ark(e: <Self::ArkEngine as ark_ec::pairing::Pairing>::ScalarField) -> Self;
+    fn into_ark(self) -> <Self::ArkEngine as ark_ec::pairing::Pairing>::ScalarField;
 }
 
 pub struct FieldParseError;
@@ -140,7 +140,8 @@ mod prime_field {
     macro_rules! prime_field {
         ($name:expr, $v:ty, $g2_ty:expr) => {
             use crate::{Field, FieldParseError, Pow};
-            use ark_ff::{Field as ArkField, PrimeField};
+            use ark_ff::{Field as ArkField, PrimeField, BigInteger};
+            use ark_serialize::{CanonicalDeserialize, CanonicalSerialize};
             use num_bigint::BigUint;
             use num_traits::{CheckedDiv, One, Zero};
             use serde::de::{self, Visitor};
@@ -152,7 +153,7 @@ mod prime_field {
             use std::io::{Read, Write};
             use std::ops::{Add, Div, Mul, Sub};
 
-            type Fr = <$v as ark_ec::PairingEngine>::Fr;
+            type Fr = <$v as ark_ec::pairing::Pairing>::ScalarField;
 
             #[derive(PartialEq, PartialOrd, Clone, Copy, Eq, Ord, Hash)]
             pub struct FieldPrime {
@@ -163,8 +164,7 @@ mod prime_field {
                 const G2_TYPE: G2Type = $g2_ty;
 
                 fn bits(&self) -> u32 {
-                    use ark_ff::BigInteger;
-                    let bits = self.v.into_repr().to_bits_be();
+                    let bits = self.v.0.to_bits_be();
                     let mut size = bits.len();
                     for bit in bits {
                         if !bit {
@@ -178,37 +178,34 @@ mod prime_field {
 
                 fn to_biguint(&self) -> BigUint {
                     use ark_ff::BigInteger;
-                    BigUint::from_bytes_le(&self.v.into_repr().to_bytes_le())
+                    BigUint::from_bytes_le(&self.v.0.to_bytes_le())
                 }
 
                 fn to_bits_be(&self) -> Vec<bool> {
                     use ark_ff::BigInteger;
-                    let res = self.v.into_repr().to_bits_be();
+                    let res = self.v.0.to_bits_be();
                     res[res.len() - Self::get_required_bits()..].to_vec()
                 }
 
                 fn to_byte_vector(&self) -> Vec<u8> {
                     use ark_ff::BigInteger;
-                    self.v.into_repr().to_bytes_le()
+                    self.v.0.to_bytes_le()
                 }
 
                 fn read<R: Read>(reader: R) -> std::io::Result<Self> {
-                    use ark_ff::FromBytes;
                     Ok(FieldPrime {
-                        v: Fr::read(reader)?,
+                        v: Fr::deserialize_compressed(reader).map_err(| err | std::io::Error::new(std::io::ErrorKind::Other, "idk man"))?,
                     })
                 }
 
                 fn write<W: Write>(&self, mut writer: W) -> std::io::Result<()> {
-                    use ark_ff::ToBytes;
-                    self.v.write(&mut writer)?;
+                    self.v.serialize_compressed(&mut writer).map_err(| err | std::io::Error::new(std::io::ErrorKind::Other, "idk man"))?;
                     Ok(())
                 }
 
                 fn from_byte_vector(bytes: Vec<u8>) -> Self {
-                    use ark_ff::FromBytes;
                     FieldPrime {
-                        v: Fr::from(<Fr as PrimeField>::BigInt::read(&bytes[..]).unwrap()),
+                        v: Fr::from(<Fr as PrimeField>::BigInt::deserialize_compressed(&bytes[..]).unwrap()),
                     }
                 }
 
@@ -235,8 +232,7 @@ mod prime_field {
                     }
                 }
                 fn get_required_bits() -> usize {
-                    use ark_ff::FpParameters;
-                    <Fr as PrimeField>::Params::MODULUS_BITS as usize
+                    <Fr as PrimeField>::MODULUS_BIT_SIZE as usize
                 }
                 fn try_from_dec_str(s: &str) -> Result<Self, FieldParseError> {
                     use std::str::FromStr;
@@ -251,7 +247,7 @@ mod prime_field {
                 }
                 fn to_compact_dec_string(&self) -> String {
                     //values up to (p-1)/2 included are represented as positive, values between (p+1)/2 and p-1 as represented as negative by subtracting p
-                    if self.v.into_repr() <= Fr::modulus_minus_one_div_two() {
+                    if self.v.0 <= <Fr as PrimeField>::MODULUS_MINUS_ONE_DIV_TWO {
                         format!("{}", self.to_string())
                     } else {
                         format!(
@@ -263,9 +259,9 @@ mod prime_field {
                 fn id() -> [u8; 4] {
                     let mut res = [0u8; 4];
                     use ark_ff::BigInteger;
-                    use ark_ff::FpParameters;
+                    use ark_ff::FpConfig;
                     use sha2::{Digest, Sha256};
-                    let hash = Sha256::digest(&<Fr as PrimeField>::Params::MODULUS.to_bytes_le());
+                    let hash = Sha256::digest(&<Fr as PrimeField>::MODULUS.to_bytes_le());
                     for i in 0..4 {
                         res[i] = hash[i];
                     }
@@ -533,7 +529,7 @@ mod prime_field {
                     use serde::ser::Error;
                     let mut data: Vec<u8> = vec![];
                     self.v
-                        .serialize(&mut data)
+                        .serialize_compressed(&mut data)
                         .map_err(|e| S::Error::custom(e.to_string()))?;
                     serializer.serialize_bytes(&data)
                 }
@@ -555,7 +551,7 @@ mod prime_field {
                     E: de::Error,
                 {
                     use ark_serialize::CanonicalDeserialize;
-                    let value: Fr = Fr::deserialize(value).map_err(|e| E::custom(e.to_string()))?;
+                    let value: Fr = Fr::deserialize_compressed(value).map_err(|e| E::custom(e.to_string()))?;
 
                     Ok(FieldPrime { v: value })
                 }
@@ -637,11 +633,11 @@ mod prime_field {
             impl ArkFieldExtensions for FieldPrime {
                 type ArkEngine = $ark_type;
 
-                fn from_ark(e: <Self::ArkEngine as ark_ec::PairingEngine>::Fr) -> Self {
+                fn from_ark(e: <Self::ArkEngine as ark_ec::pairing::Pairing>::ScalarField) -> Self {
                     Self { v: e }
                 }
 
-                fn into_ark(self) -> <Self::ArkEngine as ark_ec::PairingEngine>::Fr {
+                fn into_ark(self) -> <Self::ArkEngine as ark_ec::pairing::Pairing>::ScalarField {
                     self.v
                 }
             }
